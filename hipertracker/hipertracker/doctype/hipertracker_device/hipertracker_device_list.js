@@ -1,8 +1,8 @@
 // Generated from map_block/htmini.js + map_block/device_list.src.js - edit those and rebuild.
 // Shared helpers for the HiperTracker Device form and list maps (kept in sync in both scripts).
 window.htmini = window.htmini || (function () {
-	const COLORS = { online: "#16a34a", offline: "#dc2626", gps_off: "#d97706", unknown: "#6b7280" };
-	const LABELS = { online: "Online", offline: "Offline", gps_off: "GPS Off", unknown: "No data" };
+	const COLORS = { online: "#16a34a", offline: "#dc2626", gps_off: "#d97706", off_duty: "#9ca3af", unknown: "#6b7280" };
+	const LABELS = { online: "Online", offline: "Offline", gps_off: "GPS Off", off_duty: "Off duty", unknown: "No data" };
 	const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
 	const ago = (min) => {
 		if (min == null) return "—";
@@ -50,10 +50,11 @@ window.htmini = window.htmini || (function () {
 	function makeMap(el) {
 		const L = window.L;
 		const map = L.map(el).setView([10.55, 76.3], 8);
-		const base = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-			maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
-		const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-			maxZoom: 19, attribution: "Imagery &copy; Esri" });
+		// Google road / hybrid tiles, the same layers Traccar's web app uses
+		const base = L.tileLayer("https://{s}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}", {
+			subdomains: ["mt0", "mt1", "mt2", "mt3"], maxZoom: 20, attribution: "Map data &copy; Google" }).addTo(map);
+		const sat = L.tileLayer("https://{s}.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}", {
+			subdomains: ["mt0", "mt1", "mt2", "mt3"], maxZoom: 20, attribution: "Imagery &copy; Google" });
 		L.control.layers({ Map: base, Satellite: sat }, null, { position: "topright" }).addTo(map);
 		setTimeout(() => map.invalidateSize(), 250);
 		return map;
@@ -73,6 +74,7 @@ window.htmini = window.htmini || (function () {
 		m.setLatLng([d.lat, d.lon]);
 		m.setStyle({ fillColor: color });
 		const sub = d.status === "gps_off" ? "GPS switched off"
+			: d.status === "off_duty" ? "Off duty"
 			: (d.speed || 0) + " km/h" + (d.status === "online" ? "" : " • " + ago(d.age_minutes));
 		const html = "<b>" + esc(d.label) + "</b>" + (d.employee_name && d.employee_name !== d.label ? " · " + esc(d.employee_name) : "") +
 			'<br><span style="color:' + color + '">' + sub + "</span>";
@@ -89,7 +91,7 @@ var HT_LIST_METHOD = "hipertracker.api.live";
 frappe.listview_settings["HiperTracker Device"] = {
 	add_fields: ["last_status", "traccar_identifier", "employee_name"],
 	get_indicator(doc) {
-		const map = { Online: "green", Offline: "red", "GPS Off": "orange", "Not in Traccar": "gray" };
+		const map = { Online: "green", Offline: "red", "GPS Off": "orange", "Off Duty": "gray", "Not in Traccar": "gray" };
 		if (doc.last_status) return [__(doc.last_status), map[doc.last_status] || "gray", "last_status,=," + doc.last_status];
 	},
 	onload(listview) {
@@ -138,16 +140,17 @@ function ht_list_render(listview, sync) {
 			return data;
 		}
 		const ds = data.devices || [];
-		const c = { online: 0, offline: 0, gps_off: 0 };
+		const c = { online: 0, offline: 0, gps_off: 0, off_duty: 0 };
 		ds.forEach((d) => {
 			if (d.status === "online") c.online++;
 			else if (d.status === "gps_off") c.gps_off++;
+			else if (d.status === "off_duty") c.off_duty++;
 			else c.offline++;
 		});
 		const gps = ds.filter((d) => d.status === "gps_off");
 		sum.html(
 			"<b>" + ds.length + " device(s)</b>" +
-				H.badge("online") + " " + c.online + H.badge("offline") + " " + c.offline + H.badge("gps_off") + " " + c.gps_off +
+				H.badge("online") + " " + c.online + H.badge("offline") + " " + c.offline + H.badge("gps_off") + " " + c.gps_off + (c.off_duty ? H.badge("off_duty") + " " + c.off_duty : "") +
 				(gps.length ? '<span style="color:' + H.COLORS.gps_off + '"><b>GPS off:</b> ' +
 					gps.map((d) => H.esc(d.label) + (d.employee_name ? " (" + H.esc(d.employee_name) + ")" : "")).join(", ") + "</span>" : "") +
 				(data.unmapped_count ? '<span class="text-muted">' + data.unmapped_count + " not linked to a person — click their marker to link</span>" : "") +

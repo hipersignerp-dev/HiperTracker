@@ -3,8 +3,8 @@
   const R = root_element;
   const el = (name) => R.querySelector('[data-el="' + name + '"]');
 
-  const COLORS = { online: '#16a34a', offline: '#dc2626', gps_off: '#d97706', unknown: '#6b7280' };
-  const LABELS = { online: 'Online', offline: 'Offline', gps_off: 'GPS Off', unknown: 'No data' };
+  const COLORS = { online: '#16a34a', offline: '#dc2626', gps_off: '#d97706', off_duty: '#9ca3af', unknown: '#6b7280' };
+  const LABELS = { online: 'Online', offline: 'Offline', gps_off: 'GPS Off', off_duty: 'Off duty', unknown: 'No data' };
   const ICONS = {
     Person: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg>',
     Vehicle: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7z"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>'
@@ -52,10 +52,11 @@
   function initMap(settings) {
     const L = window.L;
     const map = L.map(el('map'), { zoomControl: true, attributionControl: true }).setView(settings.center, settings.zoom);
-    state.base = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
-    state.sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19, attribution: 'Imagery &copy; Esri' });
+    // Google road / hybrid tiles, the same layers Traccar's web app uses
+    state.base = L.tileLayer('https://{s}.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20, attribution: 'Map data &copy; Google' }).addTo(map);
+    state.sat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&hl=en&x={x}&y={y}&z={z}', {
+      subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], maxZoom: 20, attribution: 'Imagery &copy; Google' });
     map.zoomControl.setPosition('bottomright');
     map.on('click', () => select(null));
     state.map = map;
@@ -65,6 +66,7 @@
   function chipHtml(d, selected) {
     const color = COLORS[d.status] || COLORS.unknown;
     const sub = d.status === 'gps_off' ? '<small style="color:' + color + '">GPS switched off</small>'
+      : d.status === 'off_duty' ? '<small style="color:' + color + '">Off duty</small>'
       : d.status === 'online' ? '<small style="color:' + color + '">' + (d.speed || 0) + ' km/h</small>'
       : '<small style="color:' + color + '">' + (d.speed || 0) + ' km/h • ' + ago(d.age_minutes) + '</small>';
     return '<div style="position:relative">' +
@@ -104,7 +106,7 @@
     const c = { total: ds.length, online: 0, offline: 0, gps_off: 0 };
     let sp = 0, n = 0;
     ds.forEach((d) => {
-      if (d.status === 'online') c.online++; else if (d.status === 'gps_off') c.gps_off++; else c.offline++;
+      if (d.status === 'online') c.online++; else if (d.status === 'gps_off') c.gps_off++; else if (d.status !== 'off_duty') c.offline++;
       if (d.status === 'online' && d.speed > 2) { sp += d.speed; n++; }
     });
     c.avg = n ? Math.round(sp / n) + ' km/h' : '0 km/h';
@@ -172,6 +174,8 @@
     add('Location', esc(place(d)));
     add('Last update', esc(d.last_update ? frappe.datetime.str_to_user(d.last_update) : '—') + ' <span class="ht-muted">(' + ago(d.age_minutes) + ')</span>');
     if (d.status === 'gps_off') add('GPS', '<b style="color:' + COLORS.gps_off + '">Switched off on the phone</b>');
+    if (d.employee) add('Duty', (d.on_duty ? '<b style="color:' + COLORS.online + '">Checked in</b>' : 'Checked out') +
+      (d.duty_since ? ' <span class="ht-muted">(' + esc(frappe.datetime.str_to_user(d.duty_since)) + ')</span>' : ''));
     if (d.ignition != null) add('Ignition', d.ignition ? '<span class="ht-badge ht-b-online">ON</span>' : '<span class="ht-badge ht-b-unknown">OFF</span>');
     if (d.battery != null) add('Battery', Math.round(d.battery) + '%' + (d.charging ? ' (charging)' : ''));
     if (d.odometer != null) add('Odometer', (Math.round(d.odometer / 100) / 10).toLocaleString() + ' km');

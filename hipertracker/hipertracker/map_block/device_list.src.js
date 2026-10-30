@@ -4,7 +4,7 @@ var HT_LIST_METHOD = "hipertracker.api.live";
 frappe.listview_settings["HiperTracker Device"] = {
 	add_fields: ["last_status", "traccar_identifier", "employee_name"],
 	get_indicator(doc) {
-		const map = { Online: "green", Offline: "red", "GPS Off": "orange", "Not in Traccar": "gray" };
+		const map = { Online: "green", Offline: "red", "GPS Off": "orange", "Off Duty": "gray", "Not in Traccar": "gray" };
 		if (doc.last_status) return [__(doc.last_status), map[doc.last_status] || "gray", "last_status,=," + doc.last_status];
 	},
 	onload(listview) {
@@ -53,16 +53,17 @@ function ht_list_render(listview, sync) {
 			return data;
 		}
 		const ds = data.devices || [];
-		const c = { online: 0, offline: 0, gps_off: 0 };
+		const c = { online: 0, offline: 0, gps_off: 0, off_duty: 0 };
 		ds.forEach((d) => {
 			if (d.status === "online") c.online++;
 			else if (d.status === "gps_off") c.gps_off++;
+			else if (d.status === "off_duty") c.off_duty++;
 			else c.offline++;
 		});
 		const gps = ds.filter((d) => d.status === "gps_off");
 		sum.html(
 			"<b>" + ds.length + " device(s)</b>" +
-				H.badge("online") + " " + c.online + H.badge("offline") + " " + c.offline + H.badge("gps_off") + " " + c.gps_off +
+				H.badge("online") + " " + c.online + H.badge("offline") + " " + c.offline + H.badge("gps_off") + " " + c.gps_off + (c.off_duty ? H.badge("off_duty") + " " + c.off_duty : "") +
 				(gps.length ? '<span style="color:' + H.COLORS.gps_off + '"><b>GPS off:</b> ' +
 					gps.map((d) => H.esc(d.label) + (d.employee_name ? " (" + H.esc(d.employee_name) + ")" : "")).join(", ") + "</span>" : "") +
 				(data.unmapped_count ? '<span class="text-muted">' + data.unmapped_count + " not linked to a person — click their marker to link</span>" : "") +

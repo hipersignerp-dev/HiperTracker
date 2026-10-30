@@ -11,6 +11,12 @@
   "api_token",
   "traccar_email",
   "traccar_password",
+  "duty_section",
+  "duty_mode",
+  "require_location_checkin",
+  "duty_column",
+  "alarm_interval",
+  "escalate_after",
   "phone_section",
   "phone_report_url",
   "app_download_url",
@@ -66,6 +72,42 @@
    "fieldtype": "Password",
    "label": "Traccar Password",
    "depends_on": "eval:doc.auth_method=='Email and Password'"
+  },
+  {
+   "fieldname": "duty_section",
+   "fieldtype": "Section Break",
+   "label": "Check In / Check Out & GPS Alarm"
+  },
+  {
+   "fieldname": "duty_mode",
+   "fieldtype": "Check",
+   "label": "Track Only Between Check In and Check Out",
+   "default": "1",
+   "description": "Phones start tracking (and the GPS-off alarm) when the worker checks in from the app, and stop when they check out. Check-ins are saved as Employee Checkin with the location."
+  },
+  {
+   "fieldname": "require_location_checkin",
+   "fieldtype": "Check",
+   "label": "Require Location to Check In / Out",
+   "default": "1"
+  },
+  {
+   "fieldname": "duty_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "alarm_interval",
+   "fieldtype": "Int",
+   "label": "GPS-off Alarm Repeat (seconds)",
+   "default": "30",
+   "description": "While a checked-in worker's GPS is off, the phone rings again every this many seconds (minimum 10)."
+  },
+  {
+   "fieldname": "escalate_after",
+   "fieldtype": "Int",
+   "label": "Notify Head After (repeat alarms)",
+   "default": "1",
+   "description": "1 = notify the head on the 2nd alarm (after one repeat). 0 = notify straight away."
   },
   {
    "fieldname": "phone_section",
@@ -167,7 +209,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 18:00:00.000000",
+ "modified": "2026-10-30 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "HiperTracker",
  "name": "HiperTracker Settings",

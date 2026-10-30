@@ -3,10 +3,20 @@
 
 import random
 
+import frappe
 from frappe.model.document import Document
 
 
 class HiperTrackerDevice(Document):
+	def before_insert(self):
+		# named by the identifier, so it has to exist before naming (which runs before validate)
+		if not self.traccar_identifier:
+			for _ in range(10):
+				candidate = str(random.randint(10000000, 99999999))
+				if not frappe.db.exists("HiperTracker Device", candidate):
+					self.traccar_identifier = candidate
+					break
+
 	def validate(self):
 		# the identifier must match the phone exactly, so drop stray spaces
 		if not self.traccar_identifier:

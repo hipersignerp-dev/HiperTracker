@@ -18,8 +18,8 @@ from frappe.utils import (
 	time_diff_in_seconds,
 )
 
-STATUS_LABELS = {"online": "Online", "offline": "Offline", "gps_off": "GPS Off", "unknown": "Offline"}
-STATUS_RANK = {"gps_off": 0, "online": 1, "offline": 2, "unknown": 3}
+STATUS_LABELS = {"online": "Online", "offline": "Offline", "gps_off": "GPS Off", "off_duty": "Off Duty", "unknown": "Offline"}
+STATUS_RANK = {"gps_off": 0, "online": 1, "offline": 2, "off_duty": 3, "unknown": 4}
 DEVICE_FIELDS = [
 	"name",
 	"traccar_identifier",
@@ -34,6 +34,8 @@ DEVICE_FIELDS = [
 	"head_name",
 	"phone",
 	"last_update",
+	"on_duty",
+	"duty_since",
 ]
 TIMEOUT = 15
 
@@ -51,6 +53,7 @@ def _settings():
 		"refresh": max(cint(s.refresh_seconds) or 30, 10),
 		"stale_minutes": max(cint(s.stale_minutes) or 15, 1),
 		"traccar_url": (s.traccar_url or "").strip().rstrip("/"),
+		"duty_mode": cint(s.duty_mode) if s.duty_mode is not None else 1,
 	}
 
 
@@ -176,6 +179,9 @@ def live(sync=0):
 			status = "gps_off"
 		if d.get("disabled"):
 			status = "offline"
+		# employees who haven't checked in (or have checked out) aren't expected to be tracked
+		if link is not None and settings["duty_mode"] and link.get("employee") and not link.get("on_duty"):
+			status = "off_duty"
 		speed = round(flt(p.get("speed")) * 1.852, 1)  # Traccar speed is in knots
 
 		lk = link or {}
@@ -211,6 +217,8 @@ def live(sync=0):
 				"odometer": attrs.get("totalDistance"),
 				"location_enabled": 0 if gps_off else 1,
 				"accuracy": p.get("accuracy"),
+				"on_duty": 1 if lk.get("on_duty") else 0,
+				"duty_since": str(lk.get("duty_since")) if lk.get("duty_since") else None,
 			}
 		)
 
@@ -333,3 +341,155 @@ def push_device(doc):
 			indicator="orange",
 			alert=True,
 		)
+
+
+# ---------------------------------------------------------------------------------------------
+# Phone app: ERP login settings and Check In / Check Out
+# (also reachable as /api/method/hipertracker_mobile_config and hipertracker_checkin, see hooks.py)
+# ---------------------------------------------------------------------------------------------
+
+
+def _my_employee():
+	user = frappe.session.user
+	if not user or user == "Guest":
+		frappe.throw("Please log in first.", frappe.AuthenticationError)
+	emp = frappe.db.get_value(
+		"Employee", {"user_id": user, "status": "Active"}, ["name", "employee_name"], as_dict=True
+	)
+	if not emp:
+		frappe.throw(
+			f"Your ERP user {user} is not linked to an active Employee. "
+			"Ask HR to set your User ID on your Employee record."
+		)
+	return emp
+
+
+def _my_device(emp, create=False):
+	devs = frappe.get_all(
+		"HiperTracker Device",
+		filters={"employee": emp.name},
+		fields=["name", "traccar_identifier", "device_label", "active", "on_duty", "duty_since"],
+		order_by="active desc, modified desc",
+		limit=1,
+	)
+	if devs or not create:
+		return devs[0] if devs else None
+	doc = frappe.get_doc(
+		{
+			"doctype": "HiperTracker Device",
+			"device_label": emp.employee_name,
+			"tracks": "Person",
+			"active": 1,
+			"employee": emp.name,
+		}
+	).insert(ignore_permissions=True)
+	return frappe._dict(
+		name=doc.name,
+		traccar_identifier=doc.traccar_identifier,
+		device_label=doc.device_label,
+		active=1,
+		on_duty=0,
+		duty_since=None,
+	)
+
+
+def _last_log(emp):
+	last = frappe.get_all(
+		"Employee Checkin",
+		filters={"employee": emp.name},
+		fields=["name", "log_type", "time"],
+		order_by="time desc",
+		limit=1,
+	)
+	return last[0] if last else None
+
+
+@frappe.whitelist()
+def mobile_config():
+	"""Settings for the logged-in worker's phone; creates their HiperTracker Device if needed."""
+	emp = _my_employee()
+	s = frappe.get_cached_doc("HiperTracker Settings")
+	dev = _my_device(emp, create=True)
+	last = _last_log(emp)
+	return {
+		"user": frappe.session.user,
+		"full_name": frappe.db.get_value("User", frappe.session.user, "full_name"),
+		"employee": emp.name,
+		"employee_name": emp.employee_name,
+		"identifier": dev.traccar_identifier,
+		"device_label": dev.device_label,
+		"report_url": (s.phone_report_url or "http://gps.hipersignerp.cloud:5055").rstrip("/"),
+		"interval": cint(s.phone_interval) or 60,
+		"distance": cint(s.phone_distance) or 50,
+		"duty_mode": cint(s.duty_mode) if s.duty_mode is not None else 1,
+		"require_location": cint(s.require_location_checkin) if s.require_location_checkin is not None else 1,
+		"alarm_interval": max(cint(s.alarm_interval) or 30, 10),
+		"escalate_after": max(cint(s.escalate_after), 0) if s.escalate_after is not None else 1,
+		"on_duty": 1 if (last and last.log_type == "IN") else 0,
+		"last_log_time": str(last.time) if last else None,
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def checkin(log_type, latitude=None, longitude=None, accuracy=None):
+	"""Check In (IN) or Check Out (OUT): saves an Employee Checkin with the phone's location."""
+	log_type = (log_type or "").strip().upper()
+	if log_type not in ("IN", "OUT"):
+		frappe.throw("log_type must be IN or OUT")
+	emp = _my_employee()
+	s = frappe.get_cached_doc("HiperTracker Settings")
+	need_location = cint(s.require_location_checkin) if s.require_location_checkin is not None else 1
+	has_location = latitude not in (None, "", "null") and longitude not in (None, "", "null")
+	if need_location and not has_location:
+		frappe.throw(
+			f"Your location is needed to check {'in' if log_type == 'IN' else 'out'}. Turn on GPS and try again."
+		)
+	dev = _my_device(emp)
+	last = _last_log(emp)
+	if last and last.log_type == log_type:
+		return {
+			"ok": 1,
+			"already": 1,
+			"on_duty": 1 if log_type == "IN" else 0,
+			"time": str(last.time),
+			"checkin": last.name,
+			"employee_name": emp.employee_name,
+		}
+	now = now_datetime()
+	data = {
+		"doctype": "Employee Checkin",
+		"employee": emp.name,
+		"log_type": log_type,
+		"time": now,
+		"device_id": f"HiperTracker {dev.traccar_identifier if dev else ''}".strip(),
+	}
+	if has_location:
+		lat, lon = flt(latitude), flt(longitude)
+		data.update(
+			{
+				"latitude": lat,
+				"longitude": lon,
+				"geolocation": frappe.as_json(
+					{
+						"type": "FeatureCollection",
+						"features": [
+							{"type": "Feature", "properties": {}, "geometry": {"type": "Point", "coordinates": [lon, lat]}}
+						],
+					}
+				),
+			}
+		)
+	doc = frappe.get_doc(data).insert(ignore_permissions=True)
+	on_duty = 1 if log_type == "IN" else 0
+	if dev:
+		frappe.db.set_value(
+			"HiperTracker Device", dev.name, {"on_duty": on_duty, "duty_since": now}, update_modified=False
+		)
+	return {
+		"ok": 1,
+		"already": 0,
+		"on_duty": on_duty,
+		"time": str(now),
+		"checkin": doc.name,
+		"employee_name": emp.employee_name,
+	}

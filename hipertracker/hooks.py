@@ -20,3 +20,10 @@ add_to_apps_screen = [
 before_install = "hipertracker.install.before_install"
 after_install = "hipertracker.install.after_install"
 after_migrate = "hipertracker.install.after_migrate"
+
+# The phone app and the map call these short names (first built as server scripts on Nexus)
+override_whitelisted_methods = {
+	"hipertracker_live": "hipertracker.api.live",
+	"hipertracker_mobile_config": "hipertracker.api.mobile_config",
+	"hipertracker_checkin": "hipertracker.api.checkin",
+}

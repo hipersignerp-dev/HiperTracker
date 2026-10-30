@@ -58,6 +58,7 @@
 .ht-b-online { color:var(--ht-green); background: color-mix(in srgb, var(--ht-green) 12%, transparent); }
 .ht-b-offline { color:var(--ht-red); background: color-mix(in srgb, var(--ht-red) 12%, transparent); }
 .ht-b-gps_off { color:var(--ht-amber); background: color-mix(in srgb, var(--ht-amber) 15%, transparent); }
+.ht-b-off_duty { color:#6b7280; background: color-mix(in srgb, #9ca3af 18%, transparent); }
 .ht-b-unknown { color:var(--ht-gray); background: color-mix(in srgb, var(--ht-gray) 12%, transparent); }
 .ht-muted { color: var(--text-muted, #6b7280); }
 .ht-sub { font-size:12px; color: var(--text-muted, #6b7280); }

@@ -25,6 +25,8 @@ OLD_CLIENT_SCRIPTS = (
 	"HiperTracker Device - Phone Setup",
 )
 OLD_EVENT_SCRIPT = "HiperTracker Device - Sync to Traccar"
+# made by hand on Nexus; replaced by hipertracker.api.mobile_config / checkin
+OLD_MOBILE_SCRIPTS = ("HiperTracker Mobile Config API", "HiperTracker Check In API")
 
 
 def before_install():
@@ -151,6 +153,7 @@ def set_default_settings():
 		"app_download_url": "https://github.com/hipersignerp-dev/Hipersign-traccar-client/releases/latest/download/HiperTracker.apk",
 		"phone_interval": 60,
 		"phone_distance": 50,
+		"alarm_interval": 30,
 	}
 	for key, value in defaults.items():
 		if not s.get(key):
@@ -162,7 +165,7 @@ def set_default_settings():
 
 
 def retire_old_server_script():
-	for name in (OLD_SERVER_SCRIPT, OLD_EVENT_SCRIPT):
+	for name in (OLD_SERVER_SCRIPT, OLD_EVENT_SCRIPT, *OLD_MOBILE_SCRIPTS):
 		if frappe.db.exists("Server Script", name):
 			frappe.db.set_value("Server Script", name, "disabled", 1)
 	# the app ships these as hipertracker_device.js / _list.js
