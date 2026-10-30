@@ -85,3 +85,81 @@ function ht_form_render(frm, recenter) {
 		});
 	});
 }
+
+// ---- Phone setup: install-app QR + setup QR that puts the server and this identifier into the phone ----
+frappe.ui.form.on("HiperTracker Device", {
+	onload(frm) {
+		if (frm.is_new() && !frm.doc.traccar_identifier) {
+			frm.set_value("traccar_identifier", String(Math.floor(10000000 + Math.random() * 90000000)));
+		}
+	},
+	refresh(frm) {
+		ht_setup_render(frm);
+	},
+	traccar_identifier(frm) {
+		ht_setup_render(frm);
+	},
+});
+
+function ht_qr_lib() {
+	if (window.QRCode) return Promise.resolve();
+	return new Promise((resolve, reject) => {
+		const s = document.createElement("script");
+		s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+		s.onload = () => resolve();
+		s.onerror = () => reject(new Error("QR library could not load"));
+		document.head.appendChild(s);
+	});
+}
+
+function ht_setup_render(frm) {
+	const field = frm.fields_dict.phone_setup;
+	if (!field) return;
+	const wrap = field.$wrapper;
+	const H = window.htmini;
+	const ident = String(frm.doc.traccar_identifier || "").trim();
+	if (!ident) {
+		wrap.html('<div class="text-muted small">Enter or generate the Traccar Identifier first.</div>');
+		return;
+	}
+	const S = "HiperTracker Settings";
+	frappe.db
+		.get_value(S, S, ["phone_report_url", "app_download_url", "phone_interval", "phone_distance"])
+		.then((r) => {
+			const s = (r && r.message) || {};
+			const report = (s.phone_report_url || "http://gps.hipersignerp.cloud:5055").replace(/\/+$/, "");
+			const download = s.app_download_url ||
+				"https://github.com/hipersignerp-dev/Hipersign-traccar-client/releases/latest/download/HiperTracker.apk";
+			const params = new URLSearchParams({
+				id: ident,
+				accuracy: "high",
+				interval: String(s.phone_interval || 60),
+				distance: String(s.phone_distance || 50),
+				heartbeat: "300",
+				buffer: "true",
+				stop_detection: "true",
+				wakelock: "true",
+			});
+			const setup = report + "?" + params.toString();
+			const card = (title, steps, id, text) =>
+				'<div style="flex:1 1 260px;border:1px solid var(--border-color);border-radius:12px;padding:14px">' +
+				'<div style="font-weight:600;margin-bottom:6px">' + title + "</div>" +
+				'<div class="text-muted small" style="margin-bottom:10px">' + steps + "</div>" +
+				'<div class="' + id + '" style="background:#fff;padding:8px;display:inline-block;border-radius:8px"></div>' +
+				'<div class="small" style="margin-top:8px;word-break:break-all"><a href="' + H.esc(text) + '" target="_blank" rel="noopener">' +
+				H.esc(text) + "</a></div></div>";
+			wrap.html(
+				'<div style="display:flex;flex-wrap:wrap;gap:14px">' +
+					card("1. Install the app", "Scan with the phone's camera, download <b>HiperTracker.apk</b> and install it.", "ht-qr-install", download) +
+					card("2. Set up this phone", "In HiperTracker on the phone: ⚙ Settings → QR icon → scan this. It links the phone to <b>" +
+						H.esc(frm.doc.employee_name || frm.doc.device_label || ident) + "</b> (ID " + H.esc(ident) + ").", "ht-qr-setup", setup) +
+				"</div>" +
+				(frm.is_new() ? '<div class="text-muted small" style="margin-top:8px">Save this device before scanning, so it is added to Traccar.</div>' : "")
+			);
+			return ht_qr_lib().then(() => {
+				new window.QRCode(wrap.find(".ht-qr-install")[0], { text: download, width: 170, height: 170, correctLevel: window.QRCode.CorrectLevel.M });
+				new window.QRCode(wrap.find(".ht-qr-setup")[0], { text: setup, width: 170, height: 170, correctLevel: window.QRCode.CorrectLevel.M });
+			});
+		})
+		.catch(() => wrap.html('<div class="text-muted small">Phone setup is available to HiperTracker managers.</div>'));
+}

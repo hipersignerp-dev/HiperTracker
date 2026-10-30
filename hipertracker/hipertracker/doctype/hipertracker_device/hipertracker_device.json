@@ -23,6 +23,8 @@
   "head_column",
   "phone",
   "notes",
+  "phone_setup_section",
+  "phone_setup",
   "traccar_section",
   "traccar_device_id",
   "traccar_name",
@@ -57,7 +59,7 @@
    "reqd": 1,
    "unique": 1,
    "in_list_view": 1,
-   "description": "The 'Identifier' number shown in the tracker app on the phone (and in Traccar under the device). This is what links the phone to the person."
+   "description": "The 'Identifier' number shown in the tracker app on the phone (and in Traccar under the device). This is what links the phone to the person. New devices get one automatically; the setup QR below puts it into the phone."
   },
   {
    "fieldname": "device_label",
@@ -152,6 +154,16 @@
    "label": "Notes"
   },
   {
+   "fieldname": "phone_setup_section",
+   "fieldtype": "Section Break",
+   "label": "Phone Setup"
+  },
+  {
+   "fieldname": "phone_setup",
+   "fieldtype": "HTML",
+   "label": "Phone Setup"
+  },
+  {
    "fieldname": "traccar_section",
    "fieldtype": "Section Break",
    "label": "Live Status (from Traccar)",
@@ -218,7 +230,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 17:30:00.000000",
+ "modified": "2026-10-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "HiperTracker",
  "name": "HiperTracker Device",

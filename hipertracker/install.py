@@ -19,7 +19,12 @@ ROLES = ("HiperTracker User", "HiperTracker Manager")
 OUR_DOCTYPES = ("HiperTracker Settings", "HiperTracker Device")
 # made by hand on a site before this app existed; replaced by hipertracker.api.live
 OLD_SERVER_SCRIPT = "HiperTracker Live API"
-OLD_CLIENT_SCRIPTS = ("HiperTracker Device - Live Map", "HiperTracker Device - List Map")
+OLD_CLIENT_SCRIPTS = (
+	"HiperTracker Device - Live Map",
+	"HiperTracker Device - List Map",
+	"HiperTracker Device - Phone Setup",
+)
+OLD_EVENT_SCRIPT = "HiperTracker Device - Sync to Traccar"
 
 
 def before_install():
@@ -142,6 +147,10 @@ def set_default_settings():
 		"map_zoom": 8,
 		"refresh_seconds": 30,
 		"stale_minutes": 15,
+		"phone_report_url": "http://gps.hipersignerp.cloud:5055",
+		"app_download_url": "https://github.com/hipersignerp-dev/Hipersign-traccar-client/releases/latest/download/HiperTracker.apk",
+		"phone_interval": 60,
+		"phone_distance": 50,
 	}
 	for key, value in defaults.items():
 		if not s.get(key):
@@ -153,8 +162,9 @@ def set_default_settings():
 
 
 def retire_old_server_script():
-	if frappe.db.exists("Server Script", OLD_SERVER_SCRIPT):
-		frappe.db.set_value("Server Script", OLD_SERVER_SCRIPT, "disabled", 1)
+	for name in (OLD_SERVER_SCRIPT, OLD_EVENT_SCRIPT):
+		if frappe.db.exists("Server Script", name):
+			frappe.db.set_value("Server Script", name, "disabled", 1)
 	# the app ships these as hipertracker_device.js / _list.js
 	for name in OLD_CLIENT_SCRIPTS:
 		if frappe.db.exists("Client Script", name):

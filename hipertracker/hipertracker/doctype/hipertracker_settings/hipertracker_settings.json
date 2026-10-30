@@ -11,6 +11,13 @@
   "api_token",
   "traccar_email",
   "traccar_password",
+  "phone_section",
+  "phone_report_url",
+  "app_download_url",
+  "phone_column",
+  "phone_interval",
+  "phone_distance",
+  "auto_create_in_traccar",
   "map_section",
   "map_center_lat",
   "map_center_lon",
@@ -59,6 +66,48 @@
    "fieldtype": "Password",
    "label": "Traccar Password",
    "depends_on": "eval:doc.auth_method=='Email and Password'"
+  },
+  {
+   "fieldname": "phone_section",
+   "fieldtype": "Section Break",
+   "label": "Phone App"
+  },
+  {
+   "fieldname": "phone_report_url",
+   "fieldtype": "Data",
+   "label": "Phone Report URL",
+   "default": "http://gps.hipersignerp.cloud:5055",
+   "description": "Where the HiperTracker phone app sends locations (Traccar's device port, usually 5055). Put into the phone by the setup QR on each device."
+  },
+  {
+   "fieldname": "app_download_url",
+   "fieldtype": "Data",
+   "label": "App Download Link",
+   "default": "https://github.com/hipersignerp-dev/Hipersign-traccar-client/releases/latest/download/HiperTracker.apk",
+   "description": "Shown as the 'Install app' QR on each device."
+  },
+  {
+   "fieldname": "phone_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "phone_interval",
+   "fieldtype": "Int",
+   "label": "Phone Report Interval (seconds)",
+   "default": "60"
+  },
+  {
+   "fieldname": "phone_distance",
+   "fieldtype": "Int",
+   "label": "Phone Report Distance (metres)",
+   "default": "50"
+  },
+  {
+   "fieldname": "auto_create_in_traccar",
+   "fieldtype": "Check",
+   "label": "Create Devices in Traccar Automatically",
+   "default": "1",
+   "description": "Saving a device here adds it to Traccar (or renames it) with the same identifier."
   },
   {
    "fieldname": "map_section",
@@ -118,7 +167,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-30 17:00:00.000000",
+ "modified": "2026-10-30 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "HiperTracker",
  "name": "HiperTracker Settings",

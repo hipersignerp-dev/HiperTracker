@@ -276,3 +276,60 @@ def _create_device(d, ident):
 	except Exception:
 		frappe.log_error(title="HiperTracker: could not add device " + ident, message=frappe.get_traceback())
 		return None
+
+
+def push_device(doc):
+	"""Make sure Traccar has a device with this record's identifier, named like the record.
+
+	Called after a HiperTracker Device is saved, so a phone set up with the record's QR code
+	appears in Traccar (and on the map) straight away.
+	"""
+	s = frappe.get_cached_doc("HiperTracker Settings")
+	ident = (doc.traccar_identifier or "").strip()
+	if not cint(s.auto_create_in_traccar) or not ident:
+		return
+	base = (s.traccar_url or "").strip().rstrip("/")
+	sess = _session(s) if base else None
+	if not sess:
+		return
+	label = doc.device_label or ident
+	category = "truck" if doc.tracks == "Vehicle" else "person"
+	try:
+		r = sess.get(base + "/api/devices", params={"uniqueId": ident}, timeout=TIMEOUT)
+		r.raise_for_status()
+		found = r.json() or []
+		if not found:
+			body = {"name": label, "uniqueId": ident, "category": category}
+			if doc.phone:
+				body["phone"] = doc.phone
+			if doc.employee_name:
+				body["contact"] = doc.employee_name
+			r = sess.post(base + "/api/devices", json=body, timeout=TIMEOUT)
+			r.raise_for_status()
+			dev = r.json() or {}
+			frappe.msgprint(f"Added to Traccar as {label}.", indicator="green", alert=True)
+		else:
+			dev = found[0]
+			wanted = {"name": label, "category": category}
+			if doc.employee_name:
+				wanted["contact"] = doc.employee_name
+			if doc.phone:
+				wanted["phone"] = doc.phone
+			if any(dev.get(k) != v for k, v in wanted.items()):
+				dev.update(wanted)
+				sess.put(base + f"/api/devices/{dev.get('id')}", json=dev, timeout=TIMEOUT).raise_for_status()
+				frappe.msgprint("Updated in Traccar.", indicator="green", alert=True)
+		if dev.get("id") and dev.get("id") != doc.traccar_device_id:
+			frappe.db.set_value(
+				"HiperTracker Device",
+				doc.name,
+				{"traccar_device_id": dev.get("id"), "traccar_name": label},
+				update_modified=False,
+			)
+	except Exception:
+		frappe.log_error(title="HiperTracker: could not push device " + ident, message=frappe.get_traceback())
+		frappe.msgprint(
+			"Saved, but it could not be added to Traccar. Check the API token in HiperTracker Settings.",
+			indicator="orange",
+			alert=True,
+		)
