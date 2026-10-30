@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-30 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "traccar_identifier",
+  "device_label",
+  "tracks",
+  "active",
+  "assign_column",
+  "employee",
+  "employee_name",
+  "department",
+  "vehicle",
+  "head_section",
+  "reporting_head",
+  "head_name",
+  "head_column",
+  "phone",
+  "notes",
+  "traccar_section",
+  "traccar_device_id",
+  "traccar_name",
+  "last_status",
+  "last_update",
+  "status_column",
+  "last_latitude",
+  "last_longitude",
+  "last_speed",
+  "last_address"
+ ],
+ "fields": [
+  {
+   "fieldname": "traccar_identifier",
+   "fieldtype": "Data",
+   "label": "Traccar Identifier",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "description": "The 'Identifier' number shown in the tracker app on the phone (and in Traccar under the device). This is what links the phone to the person."
+  },
+  {
+   "fieldname": "device_label",
+   "fieldtype": "Data",
+   "label": "Display Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Shown on the map, e.g. the vehicle number (KL 07 CD 5678) or the person's name."
+  },
+  {
+   "fieldname": "tracks",
+   "fieldtype": "Select",
+   "label": "Tracks",
+   "options": "Person\nVehicle",
+   "default": "Person",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": "1",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "assign_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "in_standard_filter": 1,
+   "description": "Who carries this phone / drives this vehicle."
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "fetch_from": "employee.employee_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "fetch_from": "employee.department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle",
+   "options": "Vehicle",
+   "depends_on": "eval:doc.tracks=='Vehicle'"
+  },
+  {
+   "fieldname": "head_section",
+   "fieldtype": "Section Break",
+   "label": "Reporting Head"
+  },
+  {
+   "fieldname": "reporting_head",
+   "fieldtype": "Link",
+   "label": "Head (receives alerts)",
+   "options": "User",
+   "in_standard_filter": 1,
+   "description": "The person to alert when this device switches GPS off. Also create a matching Traccar user for them with an Alarm → GPS Antenna Cut notification."
+  },
+  {
+   "fieldname": "head_name",
+   "fieldtype": "Data",
+   "label": "Head Name",
+   "fetch_from": "reporting_head.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "head_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "traccar_section",
+   "fieldtype": "Section Break",
+   "label": "Live Status (from Traccar)",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "traccar_device_id",
+   "fieldtype": "Int",
+   "label": "Traccar Device ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "traccar_name",
+   "fieldtype": "Data",
+   "label": "Name in Traccar",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nOnline\nOffline\nGPS Off\nNot in Traccar",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "last_update",
+   "fieldtype": "Datetime",
+   "label": "Last Update",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_speed",
+   "fieldtype": "Float",
+   "label": "Speed (km/h)",
+   "precision": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_address",
+   "fieldtype": "Small Text",
+   "label": "Last Address",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HiperTracker",
+ "name": "HiperTracker Device",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  },
+  {
+   "role": "HiperTracker Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1
+  },
+  {
+   "role": "HiperTracker User",
+   "read": 1,
+   "report": 1,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:traccar_identifier",
+ "naming_rule": "By fieldname",
+ "title_field": "device_label",
+ "show_title_field_in_link": 1,
+ "search_fields": "device_label,employee_name,vehicle"
+}

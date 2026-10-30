@@ -1,0 +1,49 @@
+<div class="ht">
+  <div class="ht-kpis">
+    <div class="ht-kpi"><div class="ht-kpi-ico ht-blue">&#9673;</div><div><b data-k="total">–</b><span>Total Devices</span></div></div>
+    <div class="ht-kpi ht-kpi-green"><div class="ht-kpi-ico ht-green">&#9679;</div><div><b data-k="online">–</b><span>Online</span></div></div>
+    <div class="ht-kpi ht-kpi-red"><div class="ht-kpi-ico ht-red">&#9679;</div><div><b data-k="offline">–</b><span>Offline</span></div></div>
+    <div class="ht-kpi ht-kpi-amber"><div class="ht-kpi-ico ht-amber">&#9888;</div><div><b data-k="gps_off">–</b><span>GPS Off</span></div></div>
+    <div class="ht-kpi"><div class="ht-kpi-ico ht-blue">&#10148;</div><div><b data-k="avg">–</b><span>Avg. Speed (moving)</span></div></div>
+    <div class="ht-actions">
+      <span class="ht-updated" data-el="updated"></span>
+      <button class="btn btn-default btn-sm" data-act="refresh">Refresh</button>
+      <button class="btn btn-default btn-sm ht-mgr" data-act="sync" style="display:none">Sync from Traccar</button>
+      <button class="btn btn-default btn-sm ht-mgr" data-act="settings" style="display:none">Settings</button>
+    </div>
+  </div>
+
+  <div class="ht-alert" data-el="alert" style="display:none"></div>
+
+  <div class="ht-mapwrap">
+    <div class="ht-map" data-el="map"></div>
+    <div class="ht-layer">
+      <button data-layer="map" class="on">Map</button><button data-layer="sat">Satellite</button>
+    </div>
+    <button class="ht-fs" data-act="fullscreen" title="Full screen">&#x26F6;</button>
+    <div class="ht-panel" data-el="panel" style="display:none"></div>
+  </div>
+
+  <div class="ht-list">
+    <div class="ht-list-head">
+      <h4 data-el="listtitle">All Devices</h4>
+      <div class="ht-filters">
+        <input type="search" class="form-control input-sm" placeholder="Search device, person or place…" data-el="search">
+        <select class="form-control input-sm" data-el="status">
+          <option value="">All Status</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+          <option value="gps_off">GPS Off</option>
+          <option value="unassigned">Not linked to a person</option>
+        </select>
+      </div>
+    </div>
+    <div class="ht-table-wrap">
+      <table class="ht-table">
+        <thead><tr><th>Device</th><th>Person</th><th>Status</th><th>Speed</th><th>Location</th><th>Last Update</th><th></th></tr></thead>
+        <tbody data-el="rows"><tr><td colspan="7" class="ht-muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="ht-missing" data-el="missing" style="display:none"></div>
+  </div>
+</div>

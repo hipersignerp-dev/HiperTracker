@@ -1,0 +1,72 @@
+{
+ "app": "hipertracker",
+ "charts": [],
+ "creation": "2026-10-30 16:00:00.000000",
+ "content": "[{\"id\": \"htHead01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>HiperTracker</b> \\u2014 live locations</span>\", \"col\": 12}}, {\"id\": \"htMap001\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"HiperTracker Live Map\", \"col\": 12}}, {\"id\": \"htSpc001\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"htHead02\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Setup</b></span>\", \"col\": 12}}, {\"id\": \"htSc0001\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Devices & People\", \"col\": 3}}, {\"id\": \"htSc0002\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Add Device\", \"col\": 3}}, {\"id\": \"htSc0003\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"HiperTracker Settings\", \"col\": 3}}, {\"id\": \"htSc0004\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Open Traccar\", \"col\": 3}}]",
+ "custom_blocks": [
+  {
+   "custom_block_name": "HiperTracker Live Map",
+   "label": "HiperTracker Live Map"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "map",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "HiperTracker",
+ "links": [],
+ "modified": "2026-10-30 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HiperTracker",
+ "name": "HiperTracker",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HiperTracker Manager"
+  },
+  {
+   "role": "HiperTracker User"
+  }
+ ],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "label": "Devices & People",
+   "type": "DocType",
+   "link_to": "HiperTracker Device",
+   "doc_view": "List",
+   "color": "Blue"
+  },
+  {
+   "label": "Add Device",
+   "type": "URL",
+   "url": "/app/hipertracker-device/new",
+   "color": "Green"
+  },
+  {
+   "label": "HiperTracker Settings",
+   "type": "DocType",
+   "link_to": "HiperTracker Settings",
+   "color": "Grey"
+  },
+  {
+   "label": "Open Traccar",
+   "type": "URL",
+   "url": "https://gps.hipersignerp.cloud",
+   "color": "Orange"
+  }
+ ],
+ "title": "HiperTracker",
+ "type": "Workspace"
+}

@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-10-30 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "traccar_section",
+  "traccar_url",
+  "auth_method",
+  "api_token",
+  "traccar_email",
+  "traccar_password",
+  "map_section",
+  "map_center_lat",
+  "map_center_lon",
+  "map_column",
+  "map_zoom",
+  "refresh_seconds",
+  "rules_section",
+  "stale_minutes",
+  "show_unassigned"
+ ],
+ "fields": [
+  {
+   "fieldname": "traccar_section",
+   "fieldtype": "Section Break",
+   "label": "Traccar Server"
+  },
+  {
+   "fieldname": "traccar_url",
+   "fieldtype": "Data",
+   "label": "Traccar Server URL",
+   "default": "https://gps.hipersignerp.cloud",
+   "description": "The address you open Traccar on, e.g. https://gps.hipersignerp.cloud"
+  },
+  {
+   "fieldname": "auth_method",
+   "fieldtype": "Select",
+   "label": "Sign-in Method",
+   "options": "API Token\nEmail and Password",
+   "default": "API Token"
+  },
+  {
+   "fieldname": "api_token",
+   "fieldtype": "Password",
+   "label": "Traccar API Token",
+   "depends_on": "eval:doc.auth_method=='API Token'",
+   "description": "In Traccar: Settings → Account (your user) → Token → generate and copy here. Use an admin user so every device is visible."
+  },
+  {
+   "fieldname": "traccar_email",
+   "fieldtype": "Data",
+   "label": "Traccar Email",
+   "depends_on": "eval:doc.auth_method=='Email and Password'"
+  },
+  {
+   "fieldname": "traccar_password",
+   "fieldtype": "Password",
+   "label": "Traccar Password",
+   "depends_on": "eval:doc.auth_method=='Email and Password'"
+  },
+  {
+   "fieldname": "map_section",
+   "fieldtype": "Section Break",
+   "label": "Map"
+  },
+  {
+   "fieldname": "map_center_lat",
+   "fieldtype": "Float",
+   "label": "Map Centre Latitude",
+   "default": "10.55",
+   "precision": "6"
+  },
+  {
+   "fieldname": "map_center_lon",
+   "fieldtype": "Float",
+   "label": "Map Centre Longitude",
+   "default": "76.3",
+   "precision": "6"
+  },
+  {
+   "fieldname": "map_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "map_zoom",
+   "fieldtype": "Int",
+   "label": "Map Zoom",
+   "default": "8",
+   "description": "8 shows all of Kerala"
+  },
+  {
+   "fieldname": "refresh_seconds",
+   "fieldtype": "Int",
+   "label": "Auto-refresh (seconds)",
+   "default": "30"
+  },
+  {
+   "fieldname": "rules_section",
+   "fieldtype": "Section Break",
+   "label": "Rules"
+  },
+  {
+   "fieldname": "stale_minutes",
+   "fieldtype": "Int",
+   "label": "Mark Offline After (minutes)",
+   "default": "15",
+   "description": "A phone with no update for this long is shown as offline, even if Traccar still says online."
+  },
+  {
+   "fieldname": "show_unassigned",
+   "fieldtype": "Check",
+   "label": "Show Unassigned Traccar Devices on Map",
+   "default": "1",
+   "description": "System Managers also see Traccar devices not yet linked to a person."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-30 17:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HiperTracker",
+ "name": "HiperTracker Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 0,
+   "export": 0,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "write": 1,
+   "create": 1
+  },
+  {
+   "role": "HiperTracker Manager",
+   "read": 1,
+   "report": 0,
+   "export": 0,
+   "print": 0,
+   "email": 0,
+   "share": 0,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "issingle": 1
+}

@@ -1,0 +1,21 @@
+[project]
+name = "hipertracker"
+authors = [
+    { name = "Hipersign", email = "hipersignerp@gmail.com" }
+]
+description = "Live GPS tracking of staff and vehicles from Traccar, inside Hipersign ERP"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = []
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
