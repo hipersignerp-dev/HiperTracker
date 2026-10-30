@@ -83,22 +83,20 @@ def make_sidebar():
 	"""Frappe v16 sidebar for the workspace (skipped on versions without Workspace Sidebar)."""
 	if not frappe.db.exists("DocType", "Workspace Sidebar"):
 		return
+	# same simple shape as sidebars made in the v16 UI: the map first, so opening the app lands on it
 	items = [
-		{"label": "Live Map", "type": "Link", "link_type": "Workspace", "link_to": WORKSPACE, "icon": "map"},
-		{"label": "Setup", "type": "Section Break", "icon": "settings", "indent": 1},
+		{"label": "Hiper Tracker", "type": "Link", "link_type": "Workspace", "link_to": WORKSPACE, "icon": "map"},
 		{"label": "Devices & People", "type": "Link", "link_type": "DocType", "link_to": "HiperTracker Device",
-		 "icon": "smartphone", "child": 1},
+		 "icon": "smartphone"},
 		{"label": "Settings", "type": "Link", "link_type": "DocType", "link_to": "HiperTracker Settings",
-		 "icon": "settings", "child": 1},
-		{"label": "Open Traccar", "type": "Link", "link_type": "URL", "url": "https://gps.hipersignerp.cloud",
-		 "icon": "external-link", "child": 1},
+		 "icon": "settings"},
 	]
 	if frappe.db.exists("Workspace Sidebar", WORKSPACE):
 		doc = frappe.get_doc("Workspace Sidebar", WORKSPACE)
 	else:
 		doc = frappe.new_doc("Workspace Sidebar")
 		doc.title = WORKSPACE
-	doc.update({"title": WORKSPACE, "header_icon": "map-pin", "module": MODULE, "app": APP})
+	doc.update({"title": WORKSPACE, "app": APP})
 	doc.set("items", items)
 	doc.flags.ignore_permissions = True
 	doc.save() if not doc.is_new() else doc.insert()
@@ -113,6 +111,7 @@ def make_desktop_icon():
 		"icon_type": "Link",
 		"link_type": "Workspace Sidebar" if frappe.db.exists("Workspace Sidebar", WORKSPACE) else "External",
 		"link_to": WORKSPACE if frappe.db.exists("Workspace Sidebar", WORKSPACE) else None,
+		"sidebar": WORKSPACE if frappe.db.exists("Workspace Sidebar", WORKSPACE) else None,
 		"link": "/app/hipertracker",
 		"logo_url": LOGO,
 		"app": APP,
