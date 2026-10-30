@@ -1,0 +1,191 @@
+// Generated from map_block/htmini.js + map_block/device_list.src.js - edit those and rebuild.
+// Shared helpers for the HiperTracker Device form and list maps (kept in sync in both scripts).
+window.htmini = window.htmini || (function () {
+	const COLORS = { online: "#16a34a", offline: "#dc2626", gps_off: "#d97706", unknown: "#6b7280" };
+	const LABELS = { online: "Online", offline: "Offline", gps_off: "GPS Off", unknown: "No data" };
+	const esc = (s) => frappe.utils.escape_html(s == null ? "" : String(s));
+	const ago = (min) => {
+		if (min == null) return "—";
+		if (min < 1) return "just now";
+		if (min < 60) return Math.round(min) + " min ago";
+		if (min < 1440) return Math.round(min / 60) + " h ago";
+		return Math.round(min / 1440) + " d ago";
+	};
+	const place = (d) =>
+		d.address || (d.lat != null ? Number(d.lat).toFixed(5) + ", " + Number(d.lon).toFixed(5) : "—");
+	const badge = (status) =>
+		'<span style="display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;color:' +
+		COLORS[status] + ";background:" + COLORS[status] + '1f"><span style="width:7px;height:7px;border-radius:50%;background:' +
+		COLORS[status] + '"></span>' + LABELS[status] + "</span>";
+
+	let leafletPromise = null;
+	function leaflet() {
+		if (!document.getElementById("ht-leaflet-css")) {
+			const css = document.createElement("link");
+			css.id = "ht-leaflet-css";
+			css.rel = "stylesheet";
+			css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+			document.head.appendChild(css);
+		}
+		if (window.L && window.L.map) return Promise.resolve();
+		if (!leafletPromise) {
+			leafletPromise = new Promise((resolve, reject) => {
+				let s = document.getElementById("ht-leaflet-js");
+				if (!s) {
+					s = document.createElement("script");
+					s.id = "ht-leaflet-js";
+					s.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+					document.head.appendChild(s);
+				}
+				s.addEventListener("load", () => resolve());
+				s.addEventListener("error", () => reject(new Error("Map library could not load")));
+				const t = setInterval(() => {
+					if (window.L && window.L.map) { clearInterval(t); resolve(); }
+				}, 200);
+			});
+		}
+		return leafletPromise;
+	}
+
+	function makeMap(el) {
+		const L = window.L;
+		const map = L.map(el).setView([10.55, 76.3], 8);
+		const base = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+			maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+		const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+			maxZoom: 19, attribution: "Imagery &copy; Esri" });
+		L.control.layers({ Map: base, Satellite: sat }, null, { position: "topright" }).addTo(map);
+		setTimeout(() => map.invalidateSize(), 250);
+		return map;
+	}
+
+	function marker(d, onClick) {
+		const L = window.L;
+		const color = COLORS[d.status] || COLORS.unknown;
+		const m = L.circleMarker([d.lat, d.lon], { radius: 9, color: "#fff", weight: 3, fillColor: color, fillOpacity: 1 });
+		update(m, d);
+		if (onClick) m.on("click", () => onClick(d));
+		return m;
+	}
+
+	function update(m, d) {
+		const color = COLORS[d.status] || COLORS.unknown;
+		m.setLatLng([d.lat, d.lon]);
+		m.setStyle({ fillColor: color });
+		const sub = d.status === "gps_off" ? "GPS switched off"
+			: (d.speed || 0) + " km/h" + (d.status === "online" ? "" : " • " + ago(d.age_minutes));
+		const html = "<b>" + esc(d.label) + "</b>" + (d.employee_name && d.employee_name !== d.label ? " · " + esc(d.employee_name) : "") +
+			'<br><span style="color:' + color + '">' + sub + "</span>";
+		if (m.getTooltip()) m.setTooltipContent(html);
+		else m.bindTooltip(html, { permanent: true, direction: "right", offset: [10, 0] });
+	}
+
+	return { COLORS, LABELS, esc, ago, place, badge, leaflet, makeMap, marker, update };
+})();
+
+// HiperTracker Device list: live map of all devices above the list.
+var HT_LIST_METHOD = "hipertracker.api.live";
+
+frappe.listview_settings["HiperTracker Device"] = {
+	add_fields: ["last_status", "traccar_identifier", "employee_name"],
+	get_indicator(doc) {
+		const map = { Online: "green", Offline: "red", "GPS Off": "orange", "Not in Traccar": "gray" };
+		if (doc.last_status) return [__(doc.last_status), map[doc.last_status] || "gray", "last_status,=," + doc.last_status];
+	},
+	onload(listview) {
+		listview.page.add_inner_button(__("Sync from Traccar"), () => {
+			frappe.show_alert({ message: __("Syncing devices from Traccar…"), indicator: "blue" });
+			ht_list_render(listview, 1).then((data) => {
+				if (data && !data.error) {
+					frappe.show_alert({ message: __("{0} new device(s) added", [data.created || 0]), indicator: "green" });
+				}
+				listview.refresh();
+			});
+		});
+		listview.page.add_inner_button(__("Full Map"), () => frappe.set_route("hipertracker"));
+		ht_list_render(listview, 0);
+		if (window.__ht_list_timer) clearInterval(window.__ht_list_timer);
+		window.__ht_list_timer = setInterval(() => {
+			const route = frappe.get_route();
+			if (route[0] !== "List" || route[1] !== "HiperTracker Device") {
+				clearInterval(window.__ht_list_timer);
+				window.__ht_list_timer = null;
+				return;
+			}
+			if (document.visibilityState === "visible") ht_list_render(listview, 0);
+		}, 30000);
+	},
+};
+
+function ht_list_render(listview, sync) {
+	const H = window.htmini;
+	let box = listview.page.main.find(".ht-lmap");
+	if (!box.length) {
+		box = $(
+			'<div class="ht-lmap" style="padding:12px 15px 4px">' +
+				'<div class="ht-lsum" style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;margin-bottom:10px"></div>' +
+				'<div class="ht-lcanvas" style="height:380px;border-radius:12px;overflow:hidden;border:1px solid var(--border-color)"></div>' +
+			"</div>"
+		);
+		listview.page.main.prepend(box);
+	}
+	const sum = box.find(".ht-lsum");
+	return frappe.call({ method: HT_LIST_METHOD, args: { sync: sync ? 1 : 0 } }).then((r) => {
+		const data = r.message || {};
+		if (data.error) {
+			sum.html('<span class="text-danger">' + H.esc(data.error) + '</span> <a href="javascript:void(0)" onclick="frappe.set_route(\'Form\', \'HiperTracker Settings\')">Open Settings</a>');
+			box.find(".ht-lcanvas").hide();
+			return data;
+		}
+		const ds = data.devices || [];
+		const c = { online: 0, offline: 0, gps_off: 0 };
+		ds.forEach((d) => {
+			if (d.status === "online") c.online++;
+			else if (d.status === "gps_off") c.gps_off++;
+			else c.offline++;
+		});
+		const gps = ds.filter((d) => d.status === "gps_off");
+		sum.html(
+			"<b>" + ds.length + " device(s)</b>" +
+				H.badge("online") + " " + c.online + H.badge("offline") + " " + c.offline + H.badge("gps_off") + " " + c.gps_off +
+				(gps.length ? '<span style="color:' + H.COLORS.gps_off + '"><b>GPS off:</b> ' +
+					gps.map((d) => H.esc(d.label) + (d.employee_name ? " (" + H.esc(d.employee_name) + ")" : "")).join(", ") + "</span>" : "") +
+				(data.unmapped_count ? '<span class="text-muted">' + data.unmapped_count + " not linked to a person — click their marker to link</span>" : "") +
+				(!ds.length ? '<span class="text-muted">No phones yet. Add them in Traccar, then click <b>Sync from Traccar</b>.</span>' : "")
+		);
+		box.find(".ht-lcanvas").show();
+		return H.leaflet().then(() => {
+			const el = box.find(".ht-lcanvas")[0];
+			let first = false;
+			if (!el.__htmap) {
+				el.__htmap = H.makeMap(el);
+				el.__htmarkers = {};
+				first = true;
+			}
+			const map = el.__htmap;
+			const keep = {};
+			ds.forEach((d) => {
+				if (d.lat == null) return;
+				const key = String(d.traccar_id);
+				keep[key] = 1;
+				if (el.__htmarkers[key]) H.update(el.__htmarkers[key], d);
+				else {
+					el.__htmarkers[key] = H.marker(d, (x) => {
+						if (x.record) frappe.set_route("Form", "HiperTracker Device", x.record);
+						else frappe.new_doc("HiperTracker Device", { traccar_identifier: x.identifier, device_label: x.traccar_name || x.label });
+					}).addTo(map);
+				}
+			});
+			Object.keys(el.__htmarkers).forEach((k) => {
+				if (!keep[k]) { map.removeLayer(el.__htmarkers[k]); delete el.__htmarkers[k]; }
+			});
+			if (first) {
+				const pts = ds.filter((d) => d.lat != null).map((d) => [d.lat, d.lon]);
+				if (pts.length > 1) map.fitBounds(pts, { padding: [50, 50], maxZoom: 13 });
+				else if (pts.length === 1) map.setView(pts[0], 13);
+			}
+			setTimeout(() => map.invalidateSize(), 200);
+			return data;
+		});
+	});
+}

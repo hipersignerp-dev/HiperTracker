@@ -19,6 +19,7 @@ ROLES = ("HiperTracker User", "HiperTracker Manager")
 OUR_DOCTYPES = ("HiperTracker Settings", "HiperTracker Device")
 # made by hand on a site before this app existed; replaced by hipertracker.api.live
 OLD_SERVER_SCRIPT = "HiperTracker Live API"
+OLD_CLIENT_SCRIPTS = ("HiperTracker Device - Live Map", "HiperTracker Device - List Map")
 
 
 def before_install():
@@ -155,3 +156,7 @@ def set_default_settings():
 def retire_old_server_script():
 	if frappe.db.exists("Server Script", OLD_SERVER_SCRIPT):
 		frappe.db.set_value("Server Script", OLD_SERVER_SCRIPT, "disabled", 1)
+	# the app ships these as hipertracker_device.js / _list.js
+	for name in OLD_CLIENT_SCRIPTS:
+		if frappe.db.exists("Client Script", name):
+			frappe.db.set_value("Client Script", name, "enabled", 0)
